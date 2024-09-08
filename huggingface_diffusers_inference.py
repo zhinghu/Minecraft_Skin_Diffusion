@@ -21,14 +21,15 @@ async def render_minecraft_skin(minecraft_skin):
     await minecraft_skin.render_skin()
     return minecraft_skin.skin
 
-
 if __name__ == '__main__':
+    # 确保skin文件夹存在
+    skin_folder = './skin'
+    if not os.path.exists(skin_folder):
+        os.makedirs(skin_folder)
+
     # 使用huggingface的diffusers库渲染皮肤
     pipeline = DDPMPipeline.from_pretrained('./mcskin_diffuser_0609').to('cpu')
     image = pipeline().images[0].convert('RGBA')
-
-    # image = Image.open("./results/skin16.png")
-    # pixdata = image.load()
 
     pixdata = image.load()
     # 逐个像素判断是否为黑色，若为黑色则转换成透明像素
@@ -38,9 +39,9 @@ if __name__ == '__main__':
                 pixdata[x, y] = (255, 255, 255, 0)
             image.putpixel((x, y), pixdata[x, y])
 
-    # 保存皮肤
-    files_num = count_files(r'./') + 1
-    image.save('./skin' + str(files_num) + r'.png')
+    # 保存皮肤到skin文件夹
+    files_num = count_files(skin_folder) + 1
+    image.save(os.path.join(skin_folder, 'skin' + str(files_num) + '.png'))
 
     # 使用minepi库渲染并生成皮肤
     skin_object = minepi.Skin(raw_skin=image, raw_cape=None, raw_skin_url=None, raw_cape_url=None, name=None)
