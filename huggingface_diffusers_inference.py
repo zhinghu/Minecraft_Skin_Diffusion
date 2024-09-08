@@ -3,6 +3,7 @@ import minepi
 import asyncio
 from PIL import Image
 from diffusers import DDPMPipeline
+from accelerate import Accelerator
 
 def count_files(directory):
     '''
@@ -16,13 +17,19 @@ async def render_minecraft_skin(minecraft_skin):
     await minecraft_skin.render_skin()
     return minecraft_skin.skin
 
+def select_device():
+    accelerator = Accelerator()
+    return accelerator.device
+
 if __name__ == '__main__':
     # 确保skin文件夹存在
     skin_folder = './skin'
     os.makedirs(skin_folder, exist_ok=True)
 
     # 使用huggingface的diffusers库渲染皮肤
-    pipeline = DDPMPipeline.from_pretrained('./mcskin_diffuser_0609').to('cpu')
+    accelerator = Accelerator()
+    device = select_device()
+    pipeline = DDPMPipeline.from_pretrained('./mcskin_diffuser_0609').to(device)
     image = pipeline().images[0].convert('RGBA')
 
     # 逐个像素判断是否为黑色，若为黑色则转换成透明像素
