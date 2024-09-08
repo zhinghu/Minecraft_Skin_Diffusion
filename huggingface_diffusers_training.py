@@ -33,6 +33,12 @@ class TrainingConfig:
 
 config = TrainingConfig()
 
+def select_device():
+    accelerator = Accelerator()
+    return accelerator.device
+
+device = select_device()
+
 model = UNet2DModel(
     sample_size=(config.image_size_height, config.image_size_width),  # 目标图像分辨率
     in_channels=4,  # 输入通道数，3 for RGB images
@@ -53,7 +59,7 @@ model = UNet2DModel(
         "UpBlock2D",
         "UpBlock2D"
     ),
-)
+).to(device)
 
 preprocess = transforms.Compose(
     [
@@ -107,9 +113,9 @@ def train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_s
         progress_bar.set_description(f"Epoch {epoch}")
 
         for step, batch in enumerate(train_dataloader):
-            clean_images = batch['images']
-            noise = torch.randn(clean_images.shape).to(clean_images.device)
-            timesteps = torch.randint(0, noise_scheduler.num_train_timesteps, (clean_images.shape[0],), device=clean_images.device).long()
+            clean_images = batch['images'].to(device)
+            noise = torch.randn(clean_images.shape).to(device)
+            timesteps = torch.randint(0, noise_scheduler.num_train_timesteps, (clean_images.shape[0],), device=device).long()
             noisy_images = noise_scheduler.add_noise(clean_images, noise, timesteps)
 
             with accelerator.accumulate(model):
