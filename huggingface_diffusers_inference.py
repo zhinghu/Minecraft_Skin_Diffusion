@@ -24,7 +24,7 @@ async def render_minecraft_skin(minecraft_skin):
 
 if __name__ == '__main__':
     # 使用huggingface的diffusers库渲染皮肤
-    pipeline = DDPMPipeline.from_pretrained('./mcskin_diffuser_0609').to('cuda')
+    pipeline = DDPMPipeline.from_pretrained('./mcskin_diffuser_0609').to('cpu')
     image = pipeline().images[0].convert('RGBA')
 
     # image = Image.open("./results/skin16.png")
