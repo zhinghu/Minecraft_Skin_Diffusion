@@ -1,35 +1,35 @@
-from datasets import load_dataset
-from dataclasses import dataclass
-import matplotlib.pyplot as plt
-from torchvision import transforms
-from diffusers import UNet2DModel, DDPMPipeline, DDPMScheduler
-import torch, os, math
-from diffusers.optimization import get_cosine_schedule_with_warmup
-from accelerate import Accelerator
-import torch.nn.functional as F
-from tqdm.auto import tqdm
-from pathlib import Path
 from PIL import Image
+import torch, os, math
+from pathlib import Path
+from tqdm.auto import tqdm
+import matplotlib.pyplot as plt
+import torch.nn.functional as F
+from datasets import load_dataset
+from torchvision import transforms
+from accelerate import Accelerator
+from dataclasses import dataclass, field
 from accelerate import notebook_launcher
+from diffusers import UNet2DModel, DDPMPipeline, DDPMScheduler
+from diffusers.optimization import get_cosine_schedule_with_warmup
 
 @dataclass
 class TrainingConfig:
-    image_size_height = 32  # 生成的图像分辨率
-    image_size_width = 64  # 生成的图像分辨率
-    train_batch_size = 32
-    eval_batch_size = 16  # 评估时采样的图像数量
-    num_epochs = 10
-    gradient_accumulation_steps = 1
-    learning_rate = 1e-4
-    lr_warmup_steps = 500
-    save_image_epochs = 5
-    save_model_epochs = 5
-    mixed_precision = 'fp16'  # `no` for float32, `fp16` for automatic mixed precision
-    output_dir = 'mcskin_diffuser'  # 生成的模型名称
-    push_to_hub = False  # 是否上传保存的模型到HF Hub
-    hub_private_repo = False
-    overwrite_output_dir = True  # 重新运行笔记本时覆盖旧模型
-    seed = 0
+    image_size_height: int = 32  # 生成的图像分辨率
+    image_size_width: int = 64  # 生成的图像分辨率
+    train_batch_size: int = 32
+    eval_batch_size: int = 16  # 评估时采样的图像数量
+    num_epochs: int = 10
+    gradient_accumulation_steps: int = 1
+    learning_rate: float = 1e-4
+    lr_warmup_steps: int = 500
+    save_image_epochs: int = 5
+    save_model_epochs: int = 5
+    mixed_precision: str = 'fp16'  # `no` for float32, `fp16` for automatic mixed precision
+    output_dir: str = 'mcskin_diffuser'  # 生成的模型名称
+    push_to_hub: bool = False  # 是否上传保存的模型到HF Hub
+    hub_private_repo: bool = False
+    overwrite_output_dir: bool = True  # 重新运行笔记本时覆盖旧模型
+    seed: int = 0
 
 config = TrainingConfig()
 
@@ -70,7 +70,7 @@ def make_grid(images, rows, cols):
     w, h = images[0].size
     grid = Image.new('RGBA', size=(cols*w, rows*h))
     for i, image in enumerate(images):
-        grid.paste(image, box=(i%cols*w, i//cols*h))
+        grid.paste(image, box=(i % cols * w, i // cols * h))
     return grid
 
 def evaluate(config, epoch, pipeline):

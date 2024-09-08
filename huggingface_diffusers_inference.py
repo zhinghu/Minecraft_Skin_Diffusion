@@ -1,9 +1,8 @@
-# 亢体造梦 2023 copyright
-from diffusers import DDPMPipeline
-from PIL import Image
-import minepi
 import os
+import minepi
 import asyncio
+from PIL import Image
+from diffusers import DDPMPipeline
 
 def count_files(directory):
     '''
@@ -38,5 +37,5 @@ if __name__ == '__main__':
 
     # 使用minepi库渲染并生成皮肤
     skin_object = minepi.Skin(raw_skin=image, raw_cape=None, raw_skin_url=None, raw_cape_url=None, name=None)
-    asyncio.run(render_minecraft_skin(skin_object))
-    skin_object.skin.show()
+    rendered_skin = asyncio.run(render_minecraft_skin(skin_object))
+    rendered_skin.show()
