@@ -1,3 +1,4 @@
+import yaml
 from PIL import Image
 import torch, os, math
 from pathlib import Path
@@ -12,26 +13,9 @@ from accelerate import notebook_launcher
 from diffusers import UNet2DModel, DDPMPipeline, DDPMScheduler
 from diffusers.optimization import get_cosine_schedule_with_warmup
 
-@dataclass
-class TrainingConfig:
-    image_size_height: int = 32  # 生成的图像分辨率
-    image_size_width: int = 64  # 生成的图像分辨率
-    train_batch_size: int = 32
-    eval_batch_size: int = 16  # 评估时采样的图像数量
-    num_epochs: int = 10
-    gradient_accumulation_steps: int = 1
-    learning_rate: float = 1e-4
-    lr_warmup_steps: int = 500
-    save_image_epochs: int = 5
-    save_model_epochs: int = 5
-    mixed_precision: str = 'fp16'  # `no` for float32, `fp16` for automatic mixed precision
-    output_dir: str = 'mcskin_diffuser'  # 生成的模型名称
-    push_to_hub: bool = False  # 是否上传保存的模型到HF Hub
-    hub_private_repo: bool = False
-    overwrite_output_dir: bool = True  # 重新运行笔记本时覆盖旧模型
-    seed: int = 0
-
-config = TrainingConfig()
+# 读取配置文件
+with open('config.yaml', 'r') as file:
+    config = yaml.safe_load(file)
 
 def select_device():
     accelerator = Accelerator()
@@ -40,7 +24,7 @@ def select_device():
 device = select_device()
 
 model = UNet2DModel(
-    sample_size=(config.image_size_height, config.image_size_width),  # 目标图像分辨率
+    sample_size=(config['image_size_height'], config['image_size_width']),  # 目标图像分辨率
     in_channels=4,  # 输入通道数，3 for RGB images
     out_channels=4,  # 输出通道数
     layers_per_block=2,  # 每个UNet块使用的ResNet层数
@@ -81,25 +65,25 @@ def make_grid(images, rows, cols):
 
 def evaluate(config, epoch, pipeline):
     images = pipeline(
-        batch_size=config.eval_batch_size,
-        generator=torch.manual_seed(config.seed),
+        batch_size=config['eval_batch_size'],
+        generator=torch.manual_seed(config['seed']),
     ).images
 
     image_grid = make_grid(images, rows=4, cols=4)
-    test_dir = os.path.join(config.output_dir, "samples")
+    test_dir = os.path.join(config['output_dir'], "samples")
     os.makedirs(test_dir, exist_ok=True)
     image_grid.save(f"{test_dir}/{epoch:04d}.png")
     return images
 
 def train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_scheduler):
     accelerator = Accelerator(
-        mixed_precision=config.mixed_precision,
-        gradient_accumulation_steps=config.gradient_accumulation_steps,
+        mixed_precision=config['mixed_precision'],
+        gradient_accumulation_steps=config['gradient_accumulation_steps'],
         log_with="tensorboard",
-        logging_dir=os.path.join(config.output_dir, "logs")
+        logging_dir=os.path.join(config['output_dir'], "logs")
     )
     if accelerator.is_main_process:
-        os.makedirs(config.output_dir, exist_ok=True)
+        os.makedirs(config['output_dir'], exist_ok=True)
         accelerator.init_trackers("train_example")
 
     model, optimizer, train_dataloader, lr_scheduler = accelerator.prepare(
@@ -108,7 +92,7 @@ def train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_s
 
     global_step = 0
 
-    for epoch in range(config.num_epochs):
+    for epoch in range(config['num_epochs']):
         progress_bar = tqdm(total=len(train_dataloader), disable=not accelerator.is_local_main_process)
         progress_bar.set_description(f"Epoch {epoch}")
 
@@ -137,24 +121,24 @@ def train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_s
         if accelerator.is_main_process:
             pipeline = DDPMPipeline(unet=accelerator.unwrap_model(model), scheduler=noise_scheduler)
 
-            if (epoch + 1) % config.save_image_epochs == 0 or epoch == config.num_epochs - 1:
+            if (epoch + 1) % config['save_image_epochs'] == 0 or epoch == config['num_epochs'] - 1:
                 evaluate(config, epoch, pipeline)
 
-            if (epoch + 1) % config.save_model_epochs == 0 or epoch == config.num_epochs - 1:
-                pipeline.save_pretrained(config.output_dir)
+            if (epoch + 1) % config['save_model_epochs'] == 0 or epoch == config['num_epochs'] - 1:
+                pipeline.save_pretrained(config['output_dir'])
 
 if __name__ == "__main__":
     dataset = load_dataset("./dataset", split="train")
     dataset.set_transform(transform)
-    train_dataloader = torch.utils.data.DataLoader(dataset, batch_size=config.train_batch_size, shuffle=True)
+    train_dataloader = torch.utils.data.DataLoader(dataset, batch_size=config['train_batch_size'], shuffle=True)
 
     noise_scheduler = DDPMScheduler(num_train_timesteps=1000)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config.learning_rate)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config['learning_rate'])
 
     lr_scheduler = get_cosine_schedule_with_warmup(
         optimizer=optimizer,
-        num_warmup_steps=config.lr_warmup_steps,
-        num_training_steps=(len(train_dataloader) * config.num_epochs),
+        num_warmup_steps=config['lr_warmup_steps'],
+        num_training_steps=(len(train_dataloader) * config['num_epochs']),
     )
 
     args = (config, model, noise_scheduler, optimizer, train_dataloader, lr_scheduler)
