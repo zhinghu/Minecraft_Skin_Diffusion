@@ -17,6 +17,9 @@ from diffusers.optimization import get_cosine_schedule_with_warmup
 with open('config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 
+# 确保 learning_rate 是浮点数
+config['learning_rate'] = float(config['learning_rate'])
+
 def select_device():
     accelerator = Accelerator()
     return accelerator.device
