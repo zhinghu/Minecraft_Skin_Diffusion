@@ -6,11 +6,11 @@ from diffusers import DDPMPipeline
 from accelerate import Accelerator
 
 def count_files(directory):
-    '''
+    """
     计算目录下文件数量
     :param directory: 目录
     :return: 文件数量
-    '''
+    """
     return sum(len(files) for _, _, files in os.walk(directory))
 
 async def render_minecraft_skin(minecraft_skin):

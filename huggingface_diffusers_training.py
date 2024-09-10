@@ -82,8 +82,7 @@ def train_loop(config, model, noise_scheduler, optimizer, train_dataloader, lr_s
     accelerator = Accelerator(
         mixed_precision=config['mixed_precision'],
         gradient_accumulation_steps=config['gradient_accumulation_steps'],
-        log_with="tensorboard",
-        logging_dir=os.path.join(config['output_dir'], "logs")
+        log_with="tensorboard"
     )
     if accelerator.is_main_process:
         os.makedirs(config['output_dir'], exist_ok=True)
