@@ -20,7 +20,7 @@ accelerator = Accelerator()
 
 # 读取配置文件
 def load_config(config_path='config.yaml'):
-    with open(config_path, 'r') as file:
+    with open(config_path, 'r', encoding='utf-8') as file:
         config = yaml.safe_load(file)
     config['learning_rate'] = float(config['learning_rate'])
     return config
