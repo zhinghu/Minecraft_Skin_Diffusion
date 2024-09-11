@@ -1,4 +1,4 @@
-image_size_height: 32
+image_size_height: 64
 image_size_width: 64
 train_batch_size: 32
 eval_batch_size: 16
