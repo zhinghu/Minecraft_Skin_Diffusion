@@ -34,8 +34,8 @@ class UNet2DModelWrapper:
     def __init__(self, config):
         self.model = UNet2DModel(
             sample_size=(config['image_size_height'], config['image_size_width']),
-            in_channels=3,  # Minecraft 皮肤通常是 RGB
-            out_channels=3,
+            in_channels=4,  # RGBA
+            out_channels=4,
             layers_per_block=2,
             block_out_channels=(64, 128, 256, 256, 512),
             down_block_types=("DownBlock2D", "DownBlock2D", "DownBlock2D", "AttnDownBlock2D", "DownBlock2D"),
@@ -50,18 +50,18 @@ def preprocess():
     return transforms.Compose([
         transforms.Resize((64, 64)),  # 调整图像尺寸为 64x64
         transforms.ToTensor(),
-        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5]),
+        transforms.Normalize([0.5, 0.5, 0.5, 0.5], [0.5, 0.5, 0.5, 0.5]),  # 归一化 RGBA
     ])
 
 # 转换函数
 def transform(examples):
-    images = [preprocess()(image.convert("RGB")) for image in examples["image"]]
+    images = [preprocess()(image.convert("RGBA")) for image in examples["image"]]
     return {"images": images}
 
 # 创建图像网格
 def make_grid(images, rows, cols):
     w, h = images[0].size
-    grid = Image.new('RGB', size=(cols*w, rows*h))
+    grid = Image.new('RGBA', size=(cols*w, rows*h))
     for i, image in enumerate(images):
         grid.paste(image, box=(i % cols * w, i // cols * h))
     return grid
