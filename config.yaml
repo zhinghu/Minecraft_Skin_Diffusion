@@ -14,3 +14,4 @@ push_to_hub: False
 hub_private_repo: False
 overwrite_output_dir: True
 seed: 0
+num_train_timesteps: 1000

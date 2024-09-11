@@ -135,7 +135,7 @@ if __name__ == "__main__":
     dataset.set_transform(transform)
     train_dataloader = torch.utils.data.DataLoader(dataset, batch_size=config['train_batch_size'], shuffle=True)
 
-    noise_scheduler = DDPMScheduler(num_train_timesteps=1000)
+    noise_scheduler = DDPMScheduler(config['num_train_timesteps'])
     optimizer = torch.optim.AdamW(UNet2DModelWrapper(config).model.parameters(), lr=config['learning_rate'])
 
     lr_scheduler = get_cosine_schedule_with_warmup(
