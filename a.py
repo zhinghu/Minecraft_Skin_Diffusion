@@ -15,6 +15,9 @@ from accelerate import notebook_launcher
 from diffusers import UNet2DModel, DDPMPipeline, DDPMScheduler
 from diffusers.optimization import get_cosine_schedule_with_warmup
 
+# 全局初始化Accelerator
+accelerator = Accelerator()
+
 # 读取配置文件
 def load_config(config_path='config.yaml'):
     with open(config_path, 'r') as file:
@@ -24,7 +27,6 @@ def load_config(config_path='config.yaml'):
 
 # 选择设备
 def select_device():
-    accelerator = Accelerator()
     return accelerator.device
 
 # 定义模型
@@ -79,11 +81,6 @@ def evaluate(config, epoch, pipeline):
 
 # 训练循环
 def train_loop(config, model_wrapper, noise_scheduler, optimizer, train_dataloader, lr_scheduler):
-    accelerator = Accelerator(
-        mixed_precision=config['mixed_precision'],
-        gradient_accumulation_steps=config['gradient_accumulation_steps'],
-        log_with="tensorboard"
-    )
     if accelerator.is_main_process:
         os.makedirs(config['output_dir'], exist_ok=True)
         accelerator.init_trackers("train_example")
@@ -132,8 +129,7 @@ def train_loop(config, model_wrapper, noise_scheduler, optimizer, train_dataload
 # 主函数
 if __name__ == "__main__":
     config = load_config()
-    device = select_device()
-    config['device'] = device
+    config['device'] = select_device()
 
     dataset = load_dataset("./dataset", split="train")
     dataset.set_transform(transform)
